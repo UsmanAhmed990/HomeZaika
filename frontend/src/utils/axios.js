@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Set full backend URL (bypassing proxy)
-axios.defaults.baseURL = 'http://localhost:5020';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5020';
 
 // Configure axios to send cookies with requests
 axios.defaults.withCredentials = true;
