@@ -16,7 +16,9 @@ const io = socketIo(server, {
             'http://localhost:5174',
             'http://localhost:5175',
             'https://home-zaika-git-main-usmanahmed990s-projects.vercel.app',
-            'https://home-zaika.vercel.app'
+            'https://home-zaika.vercel.app',
+            'https://home-zaika-420ruqdc1-usmanahmed990s-projects.vercel.app', // Specifically added from error
+            /\.vercel\.app$/ // Allow all Vercel subdomains (Regex)
         ],
         credentials: true
     }
@@ -51,7 +53,9 @@ app.use(cors({
         'http://localhost:5174',
         'http://localhost:5175',
         'https://home-zaika-git-main-usmanahmed990s-projects.vercel.app',
-        'https://home-zaika.vercel.app'
+        'https://home-zaika.vercel.app',
+        'https://home-zaika-420ruqdc1-usmanahmed990s-projects.vercel.app', // Specifically added from error
+        /\.vercel\.app$/ // Allow all Vercel subdomains
     ],
     credentials: true
 }));
