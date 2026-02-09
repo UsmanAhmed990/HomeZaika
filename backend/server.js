@@ -11,15 +11,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:5175',
-            'https://home-zaika-git-main-usmanahmed990s-projects.vercel.app',
-            'https://home-zaika.vercel.app',
-            'https://home-zaika-420ruqdc1-usmanahmed990s-projects.vercel.app', // Specifically added from error
-            /\.vercel\.app$/ // Allow all Vercel subdomains (Regex)
-        ],
+        origin: "*", // Allow all origins
+        methods: ["GET", "POST"],
         credentials: true
     }
 });
@@ -48,18 +41,12 @@ io.on('connection', (socket) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5175',
-        'https://home-zaika-git-main-usmanahmed990s-projects.vercel.app',
-        'https://home-zaika.vercel.app',
-        'https://home-zaika-420ruqdc1-usmanahmed990s-projects.vercel.app', // Specifically added from error
-        /\.vercel\.app$/ // Allow all Vercel subdomains
-    ],
-    credentials: true
+    origin: true, // Allow all origins dynamically
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }));
 app.use(cookieParser());
+app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
 
 
 // Routes
@@ -85,8 +72,9 @@ app.get('/', (req, res) => {
 const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/homeziaka', {
-            serverSelectionTimeoutMS: 5020,
-            socketTimeoutMS: 45020,
+            serverSelectionTimeoutMS: 30000, // Increased to 30 seconds
+            socketTimeoutMS: 45000,
+            family: 4 // Force IPv4
         });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (err) {

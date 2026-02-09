@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Clock, Shield, Heart, ChefHat, Sparkles } from 'lucide-react';
+import devs  from './Assets/devs.jpg'
+
+
 
 const Home = () => {
     return (
@@ -244,18 +247,18 @@ const Home = () => {
                         {[
                             {
                                 name: "Usman Ahmed",
-                                role: "Frontend Developer",
-                                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80",
+                                role: "MERN Stack Developer",
+                                image: devs,
                                 bio: "Specializes in crafting beautiful, responsive, and performance-driven user interfaces."
                             },
                             {
-                                name: "Zainab",
+                                name: "Zainab Awan",
                                 role: "Backend Developer",
                                 image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop&q=80",
                                 bio: "Expert in building scalable server-side systems and designing robust cloud architectures."
                             },
                             {
-                                name: "Mushtaq",
+                                name: "Mushtaq Aziz",
                                 role: "UI/UX Designer",
                                 image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8cGVyc29ufGVufDB8fDB8fHww",
                                 bio: "Passionate about creating intuitive user experiences and striking visual design systems."

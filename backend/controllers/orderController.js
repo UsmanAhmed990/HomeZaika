@@ -2,14 +2,39 @@ const Order = require('../models/Order');
 const sendEmail = require('../utils/sendEmail');
 
 // Create New Order
-// Create New Order
 exports.createOrder = async (req, res) => {
     try {
-        const { items, deliveryAddress, paymentMethod, totalAmount, customerName, customerEmail, customerPhone } = req.body;
+        let {
+            items,
+            deliveryAddress,
+            paymentMethod,
+            totalAmount,
+            customerName,
+            customerEmail,
+            customerPhone
+        } = req.body;
+
+        // Parse JSON fields if coming from FormData (Multipart)
+        if (typeof items === 'string') items = JSON.parse(items);
+        if (typeof deliveryAddress === 'string') deliveryAddress = JSON.parse(deliveryAddress);
+
+        let paymentScreenshotUrl = '';
+        let paymentStatus = 'Pending';
+
+        // Handle Screenshot Upload
+        if (req.file) {
+            // Save relative path for static serving
+            // multer saves to 'backend/uploads/payments', we want to serve from 'uploads/payments'
+            // The static middleware serves 'backend/uploads' at '/uploads'
+            // So 'backend/uploads/payments/filename.jpg' -> '/uploads/payments/filename.jpg'
+            paymentScreenshotUrl = '/uploads/payments/' + req.file.filename;
+            paymentStatus = 'Pending Online Verification';
+        }
 
         // Check if user is logged in and has a valid ID (not guest_admin)
         const isGuest = !req.user || req.user.id === 'guest_admin';
-        const userId = (req.user && req.user.id !== 'guest_admin') ? req.user.id : null;
+        const userId =
+            req.user && req.user.id !== 'guest_admin' ? req.user.id : null;
 
         const order = await Order.create({
             items,
@@ -20,7 +45,9 @@ exports.createOrder = async (req, res) => {
             customerEmail,
             customerPhone,
             isGuest,
-            user: userId
+            user: userId,
+            paymentStatus,
+            paymentScreenshot: paymentScreenshotUrl
         });
 
         // Real-time update for Admin/Chef
@@ -29,47 +56,89 @@ exports.createOrder = async (req, res) => {
             io.emit('newOrder', order);
         }
 
-        // Send Confirmation Email
-        const itemsList = items.map(item => `<li>${item.name} (x${item.quantity}) - Rs. ${item.price * item.quantity}</li>`).join('');
+        // ================== SEND ORDER CONFIRMATION EMAIL ==================
+        const itemsList = items
+            .map(
+                item =>
+                    `<li>
+                        <strong>${item.name}</strong>
+                        (x${item.quantity}) — Rs. ${item.price * item.quantity}
+                    </li>`
+            )
+            .join('');
+
         const targetEmail = customerEmail;
 
         if (targetEmail) {
             const emailOptions = {
                 email: targetEmail,
-                subject: 'Order Confirmation - HOMEZaika',
+                subject:
+                    'Your Order Has Been Placed Successfully 🍽️ | HOMEZaika',
                 html: `
                     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                        <h2 style="color: #2563eb;">Hi ${customerName || 'Customer'},</h2>
-                        <h3 style="color: #2563eb;">You have successfully placed an order with HOMEZaika services.</h3>
-                        <p>Thank you for choosing HOMEZaika! Here are your order details:</p>
-                        <div style="background: #f3f4f6; padding: 20px; border-radius: 10px;">
-                            <h3>Order Summary</h3>
-                            <ul>${itemsList}</ul>
-                            <p><strong>Total Amount:</strong> Rs. ${totalAmount}</p>
-                            <p><strong>Payment Method:</strong> ${paymentMethod}</p>
-                            
-                            <h3>Delivery Address</h3>
-                            <p>${deliveryAddress.street}, ${deliveryAddress.city}</p>
-                            <p><strong>Phone:</strong> ${customerPhone || deliveryAddress.phone}</p>
-                        </div>
-                        <p style="margin-top: 20px;">We are preparing your homemade meal with love!</p>
+                        <h2 style="color:#16a34a;">
+                            Hi ${customerName || 'Customer'} 👋
+                        </h2>
+
+                        <p>
+                            Thank you for your order! 🎉  
+                            You have successfully placed the following order with
+                            <strong>HOMEZaika</strong>.
+                        </p>
+
+                        <h3 style="margin-top:20px;">🛒 Items You Ordered:</h3>
+                        <ul>
+                            ${itemsList}
+                        </ul>
+
+                        <p><strong>Total Amount:</strong> Rs. ${totalAmount}</p>
+                        <p><strong>Payment Method:</strong> ${paymentMethod}</p>
+
+                        <h3 style="margin-top:20px;">📍 Delivery Address</h3>
+                        <p>
+                            ${deliveryAddress.street}, ${deliveryAddress.city}
+                        </p>
+                        <p>
+                            <strong>Contact:</strong>
+                            ${customerPhone || deliveryAddress.phone}
+                        </p>
+
+                        <p style="margin-top:25px;">
+                            🍳 Your homemade meal is now being prepared with love.
+                            We’ll notify you once it’s on the way!
+                        </p>
+
+                        <p style="margin-top:30px;">
+                            Regards,<br/>
+                            <strong>HOMEZaika Team</strong>
+                        </p>
                     </div>
                 `
             };
 
             try {
                 await sendEmail(emailOptions);
+                console.log(
+                    '✅ Order confirmation email sent to customer'
+                );
             } catch (emailError) {
-                console.error('Email failed to send:', emailError);
+                console.error(
+                    '❌ Email failed to send:',
+                    emailError
+                );
             }
         }
+        // ================== EMAIL SECTION END ==================
 
         res.status(201).json({ success: true, order });
     } catch (error) {
         console.error('CREATE ORDER ERROR:', error);
         console.error('Stack:', error.stack);
         console.error('Body:', JSON.stringify(req.body));
-        res.status(500).json({ message: error.message, stack: error.stack });
+        res.status(500).json({
+            message: error.message,
+            stack: error.stack
+        });
     }
 };
 
@@ -77,9 +146,15 @@ exports.createOrder = async (req, res) => {
 exports.getMyOrders = async (req, res) => {
     try {
         if (!req.user || req.user.id === 'guest_admin') {
-            return res.status(200).json({ success: true, orders: [] }); // Admin has no personal orders or use Admin All Orders
+            return res
+                .status(200)
+                .json({ success: true, orders: [] });
         }
-        const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+
+        const orders = await Order.find({
+            user: req.user.id
+        }).sort({ createdAt: -1 });
+
         res.status(200).json({ success: true, orders });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -91,30 +166,41 @@ exports.getChefOrders = async (req, res) => {
     try {
         let chefId;
 
-        // Handle Guest Admin logic effectively by showing ALL orders or Specific Admin Chef orders?
-        // If Role is Admin, show ALL orders? or filtered? 
-        // Typically Admin uses getAdminAllOrders. 
-        // If Admin accesses this route, maybe return all orders or empty?
-        if (req.user.role === 'admin' || req.user.id === 'guest_admin') {
-            // For simplicity, if admin hits this, maybe they want to see "Admin Chef" orders or Just All?
-            // Let's redirect logic to all orders OR standard Empty for now to avoid crash.
-            // OR: Fetch 'Admin Chef' ID if exists.
+        if (
+            req.user.role === 'admin' ||
+            req.user.id === 'guest_admin'
+        ) {
             const Chef = require('../models/Chef');
-            const adminChef = await Chef.findOne({ businessName: 'Home Zaika Admin' });
+            const adminChef = await Chef.findOne({
+                businessName: 'Home Zaika Admin'
+            });
+
             if (adminChef) {
                 chefId = adminChef._id;
             } else {
-                // If no admin chef profile, return empty
-                return res.status(200).json({ success: true, orders: [] });
+                return res
+                    .status(200)
+                    .json({ success: true, orders: [] });
             }
         } else {
             const Chef = require('../models/Chef');
-            const chef = await Chef.findOne({ user: req.user.id });
-            if (!chef) return res.status(404).json({ message: 'Chef not found' });
+            const chef = await Chef.findOne({
+                user: req.user.id
+            });
+
+            if (!chef)
+                return res
+                    .status(404)
+                    .json({ message: 'Chef not found' });
+
             chefId = chef._id;
         }
 
-        const orders = await Order.find({ chef: chefId }).populate('user', 'name').sort({ createdAt: -1 });
+        const orders = await Order.find({
+            chef: chefId
+        })
+            .populate('user', 'name')
+            .sort({ createdAt: -1 });
 
         res.status(200).json({ success: true, orders });
     } catch (error) {
@@ -125,14 +211,18 @@ exports.getChefOrders = async (req, res) => {
 // Update Order Status (Chef/Admin)
 exports.updateOrderStatus = async (req, res) => {
     try {
-        const { status } = req.body;
+        const { status, paymentStatus } = req.body;
         const order = await Order.findById(req.params.id);
 
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res
+                .status(404)
+                .json({ message: 'Order not found' });
         }
 
-        order.status = status;
+        if (status) order.status = status;
+        if (paymentStatus) order.paymentStatus = paymentStatus;
+
         await order.save();
 
         res.status(200).json({ success: true, order });
@@ -140,11 +230,61 @@ exports.updateOrderStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 // Get All Orders (Admin)
 exports.getAdminAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find().populate('user', 'name').sort({ createdAt: -1 });
+        const orders = await Order.find()
+            .populate('user', 'name')
+            .sort({ createdAt: -1 });
+
         res.status(200).json({ success: true, orders });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Verify Payment (Admin)
+exports.verifyPayment = async (req, res) => {
+    try {
+        const { paidAmount } = req.body;
+
+        if (!paidAmount || isNaN(paidAmount)) {
+            return res.status(400).json({ message: 'Valid paid amount is required' });
+        }
+
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        order.paymentStatus = 'BILL PAID ONLINE';
+        order.paidAmount = Number(paidAmount);
+        order.paymentVerifiedAt = Date.now();
+        order.verifiedBy = req.user && req.user.id ? req.user.id : 'admin';
+
+        await order.save();
+
+        res.status(200).json({ success: true, order });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Reject Payment (Admin)
+exports.rejectPayment = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        order.paymentStatus = 'PAYMENT REJECTED';
+        await order.save();
+
+        res.status(200).json({ success: true, order });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

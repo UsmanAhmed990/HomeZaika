@@ -47,17 +47,39 @@ const Navbar = () => {
             </Link>
 
             {/* User Auth (Signup Only) */}
-            {!isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <Link to="/login" className="text-gray-600 font-bold hover:text-blue-600 transition">Login</Link>
-                <Link to="/signup" className="btn-primary px-6 py-2 rounded-full">Signup for Free</Link>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <span className="text-gray-600 font-medium">Welcome, {user.name}</span>
-                {/* <Link to="/profile" className="text-gray-700 font-bold hover:text-blue-600 transition">Profile</Link> */}
-              </div>
-            )}
+           {/* User Auth (Signup Only) */}
+{!isAuthenticated ? (
+  <div className="flex items-center gap-4">
+    <Link to="/login" className="text-gray-600 font-bold hover:text-blue-600 transition">
+      Login
+    </Link>
+    <Link to="/signup" className="btn-primary px-4 py-2 rounded-full text-sm">
+      Signup for Free
+    </Link>
+  </div>
+) : (
+  <div className="flex items-center gap-4">
+    <span className="text-gray-600 font-medium">
+      Welcome, {user.name}
+    </span>
+
+    {/* ✅ YE BUTTON ADD KARNA THA */}
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 px-4 py-2 rounded-full
+                 bg-red-50 text-red-600 font-bold hover:bg-red-100 transition"
+    >
+      <LogOut className="w-4 h-4" />
+      Logout
+    </button>
+  </div>
+)}
+
+
+
+
+
+
 
             {/* Private Portal Gate */}
             <div className="relative group">
@@ -143,7 +165,7 @@ const Navbar = () => {
         <div className="md:hidden bg-white border-t shadow-lg">
           <div className="space-y-1 px-4 py-4">
             <MobileLink to="/browse" onClick={setIsMenuOpen}>Browse Food</MobileLink>
-            <MobileLink to="/chefs" onClick={setIsMenuOpen}>Home Chefs</MobileLink>
+            {/* <MobileLink to="/chefs" onClick={setIsMenuOpen}>Home Chefs</MobileLink> */}
             <MobileLink to="/cart" onClick={setIsMenuOpen}>
               Cart ({cartItems.length})
             </MobileLink>
@@ -209,8 +231,8 @@ const Navbar = () => {
                     LOCK
                   </button>
                 </div>
-                <MobileLink to="/profile" onClick={setIsMenuOpen} icon={<User className="w-4 h-4" />}>Profile</MobileLink>
-                <MobileLink to="/orders" onClick={setIsMenuOpen} icon={<ShoppingBag className="w-4 h-4" />}>My Orders</MobileLink>
+                {/* <MobileLink to="/profile" onClick={setIsMenuOpen} icon={<User className="w-4 h-4" />}>Profile</MobileLink> */}
+                {/* <MobileLink to="/orders" onClick={setIsMenuOpen} icon={<ShoppingBag className="w-4 h-4" />}>My Orders</MobileLink> */}
                 <MobileLink to="/chef/dashboard" onClick={setIsMenuOpen} icon={<ChefHat className="w-4 h-4" />}>Chef Dashboard</MobileLink>
                 <MobileLink to="/admin/dashboard" onClick={setIsMenuOpen} icon={<Shield className="w-4 h-4" />}>Admin Dashboard</MobileLink>
               </div>

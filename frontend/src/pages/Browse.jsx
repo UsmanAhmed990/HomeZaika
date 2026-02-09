@@ -67,6 +67,8 @@ const Browse = () => {
     const [foods, setFoods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [keyword, setKeyword] = useState('');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [selectedFood, setSelectedFood] = useState(null);
 
     const dispatch = useDispatch();
 
@@ -92,14 +94,28 @@ const Browse = () => {
     );
 
     const handleAddToCart = (food) => {
-        dispatch(addToCart({
-            food: food._id,
-            name: food.name,
-            price: food.price,
-            image: food.images[0],
-            quantity: 1,
-            chef: food.chef._id
-        }));
+        setSelectedFood(food);
+        setShowConfirmModal(true);
+    };
+
+    const confirmAddToCart = () => {
+        if (selectedFood) {
+            dispatch(addToCart({
+                food: selectedFood._id,
+                name: selectedFood.name,
+                price: selectedFood.price,
+                image: selectedFood.images[0],
+                quantity: 1,
+                chef: selectedFood.chef._id
+            }));
+        }
+        setShowConfirmModal(false);
+        setSelectedFood(null);
+    };
+
+    const cancelAddToCart = () => {
+        setShowConfirmModal(false);
+        setSelectedFood(null);
     };
 
     return (
@@ -173,6 +189,37 @@ const Browse = () => {
                 )}
                 <OrderHistory />
             </div>
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+                        <div className="text-center">
+                            <div className="mb-4">
+                                <ShoppingCart className="mx-auto text-blue-600" size={48} />
+                            </div>
+                            <h2 className="text-2xl font-bold mb-2">Confirm Order</h2>
+                            <p className="text-gray-600 mb-6">
+                                Do you want to place <span className="font-bold text-blue-600">{selectedFood?.name}</span> for order?
+                            </p>
+                            <div className="flex gap-4 justify-center">
+                                <button
+                                    onClick={cancelAddToCart}
+                                    className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all duration-200"
+                                >
+                                    No
+                                </button>
+                                <button
+                                    onClick={confirmAddToCart}
+                                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200"
+                                >
+                                    Yes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

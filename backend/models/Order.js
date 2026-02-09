@@ -14,7 +14,16 @@ const orderSchema = new mongoose.Schema({
     }],
     totalAmount: { type: Number, required: true },
     status: { type: String, enum: ['Pending', 'Delivered', 'Cancelled'], default: 'Pending' },
-    paymentMethod: { type: String, enum: ['COD'], default: 'COD' },
+    paymentMethod: { type: String, enum: ['COD', 'Online'], default: 'COD' },
+    paymentStatus: {
+        type: String,
+        enum: ['Pending', 'Pending Online Verification', 'BILL PAID ONLINE', 'PAYMENT REJECTED', 'COD'],
+        default: 'Pending'
+    },
+    paymentScreenshot: { type: String }, // Path to local file
+    paidAmount: { type: Number },
+    paymentVerifiedAt: { type: Date },
+    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     deliveryAddress: {
         street: String,
         city: String,
